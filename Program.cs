@@ -1,10 +1,16 @@
 using P1_AP1_JuanGuillen.Components;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+
+var ConStr = builder.Configuration.GetConnectionString("sqlConStr");
+
+builder.Services.AddDbContextFactory<Contexto>(o => o.UseSqlite(ConStr));
 
 var app = builder.Build();
 

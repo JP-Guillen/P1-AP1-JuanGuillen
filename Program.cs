@@ -1,6 +1,7 @@
 using P1_AP1_JuanGuillen.Components;
 using Microsoft.EntityFrameworkCore;
 using P1_AP1_JuanGuillen.DAL;
+using P1_AP1_JuanGuillen.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +13,8 @@ builder.Services.AddRazorComponents()
 var ConStr = builder.Configuration.GetConnectionString("sqlConStr");
 
 builder.Services.AddDbContextFactory<Contexto>(o => o.UseSqlite(ConStr));
+
+builder.Services.AddScoped<RegistroServices>();
 
 var app = builder.Build();
 

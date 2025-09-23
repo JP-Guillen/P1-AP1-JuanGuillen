@@ -1,12 +1,11 @@
-﻿
-using System.ComponentModel.DataAnnotations;
-using System.Runtime.CompilerServices;
+﻿using System.ComponentModel.DataAnnotations;
 
+namespace P1_AP1_JuanGuillen.Models;
 public class Registro
 {
 
     [Key]
 
-    private int RegistroId { get; set; }
+    public int RegistroId { get; set; }
 }
 

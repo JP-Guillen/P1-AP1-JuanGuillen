@@ -1,5 +1,6 @@
 using P1_AP1_JuanGuillen.Components;
 using Microsoft.EntityFrameworkCore;
+using P1_AP1_JuanGuillen.DAL;
 
 var builder = WebApplication.CreateBuilder(args);
 

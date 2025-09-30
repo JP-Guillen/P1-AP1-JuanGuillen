@@ -16,5 +16,35 @@ public class RegistroServices(IDbContextFactory<Contexto> DbFactory)
             .AsNoTracking()
             .ToListAsync();
     }
+
+    public async Task<bool> Insertar(ControlHuacal huacal)
+    {
+        await using var contexto = await DbFactory.CreateDbContextAsync();
+        contexto.Registros.Add(huacal);
+        return await contexto.SaveChangesAsync() > 0;
+    }
+
+    public async Task<bool> Modificar(ControlHuacal huacal)
+    {
+        await using var contexto = await DbFactory.CreateDbContextAsync();
+        contexto.Update(huacal);
+        return await contexto
+            .SaveChangesAsync() > 0;
+    }
+
+    public async Task<bool> Eliminar(int IdEntrada)
+    {
+        await using var contexto = await DbFactory.CreateDbContextAsync();
+        return await contexto.Registros
+            .Where(j => j.IdEntrada == IdEntrada)
+            .ExecuteDeleteAsync() > 0;
+    }
+
+    public async Task<ControlHuacal?> Buscar(int Entrada)
+    {
+        await using var contexto = await DbFactory.CreateDbContextAsync();
+        return await contexto.Registros.FirstOrDefaultAsync(j => j.IdEntrada == Entrada);
+    }
+
 }
 

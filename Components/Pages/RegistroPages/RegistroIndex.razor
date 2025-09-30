@@ -1,5 +1,91 @@
-﻿<h3>RegistroIndex</h3>
-<title class=" ">Registro  </title>
-@code {
+﻿@page "/Registro/Index"
+@inject NavigationManager navigation
+@inject RegistroServices registroServices
+@rendermode InteractiveServer 
 
+
+
+
+<PageTitle>Registro</PageTitle>
+<div class="container">
+	<div class="card shadow-lg">
+	<div class="card-header">
+		<h1 class="card-title"><strong>Registro Huacales</strong></h1>
+	</div>
+	<div class="card-body">
+		<div class="row">
+			<div class="col-4">
+				<label class="col-form-label"> <strong>Filtrar:</strong></label>
+			</div>
+			<div class="col-4">
+				<label class="col-form-label"> <strong>Buscar:</strong></label>
+			</div>
+
+		</div>
+		<div class=" d-flex justify-content-end">
+				<a href="/Registro/crear" class="btn btn-primary bi bi-plus-square"> Crear</a>
+		</div>
+		<div class="row">
+			<div class="col-4">
+				<InputSelect class="form-select" @bind-Value="Filtro"> 
+					<option value="" selected disable>Elige una opcion</option> 
+					<option value="Nombre">Nombre</option>
+					<option value="Precio">Precio</option>
+					<option value="Cantidad">Cantidad</option>
+
+					</InputSelect>
+			</div>
+			<div class="col-4">
+					<InputText class="form-control" @bind-Value="valor"></InputText>
+			</div>
+		</div>
+
+		<table class="table">
+			<thead>
+				<tr>
+						<th><strong>IdEntrada</strong></th>
+						<th><strong>Nombre</strong></th>
+						<th><strong>Cantidad</strong></th>
+						<th><strong>Precio</strong></th>
+						<th><strong>Cambios</strong></th>
+
+				</tr>
+			</thead>
+			<tbody>
+
+					@foreach (var Huacal in Lista)
+					{
+						<tr>
+							<td>@Huacal.IdEntrada</td>
+							<td>@Huacal.NombreCliente</td>
+							<td>@Huacal.precio</td>
+							<td>@Huacal.cantidad</td>
+							<td><a href="/Registro/edit/@Huacal.IdEntrada" class="btn btn-primary bi bi-pencil"> Editar</a></td>
+						</tr>
+					}
+				</tbody>
+		</table>
+	</div>
+	<div class="card-footer d-flex justify-content-between">
+				<strong>Total registrado: @Lista.Count </strong>
+				<strong> Total: @Lista.Sum(a => a.precio) </strong>
+	</div>
+	</div>
+</div>
+
+
+@code {
+	public string Filtro;
+	public string valor;
+	private List<ControlHuacal> Lista { get; set; } = new List<ControlHuacal>();
+
+	protected override async Task OnInitializedAsync()
+	{
+		Lista = await registroServices.Listar(r => r.IdEntrada > 0);
+	}
+
+	private void Navegar()
+	{
+		navigation.NavigateTo("/Registro/crear");
+	}
 }

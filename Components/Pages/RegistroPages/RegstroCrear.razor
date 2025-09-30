@@ -1,0 +1,44 @@
+﻿@page "/Registro/crear"
+@inject RegistroServices registroServices
+@inject NavigationManager navigation
+@rendermode InteractiveServer
+
+<PageTitle>Crear</PageTitle>
+
+<div class="container">
+	<div class="card shadow-lg">
+		<div class="card-header">
+			<h2 class="card-title"> Crear</h2>
+		</div>
+
+	
+		<div class="card-body">
+			<div class="mb-3">
+				<label class="form-label"><strong>Nombre Cliente</strong></label>
+				<InputText class="form-control" @bind-Value ="huacal.NombreCliente"></InputText>
+			</div>
+			<div class="mb-3">
+				<label class="form-label"><strong>Precio</strong></label>
+				<InputNumber class="form-control" @bind-Value="huacal.precio"></InputNumber>
+			</div>
+			<div class="mb-3">
+				<label class="form-label"><strong>Cantidad</strong></label>
+				<InputNumber class="form-control" @bind-Value="huacal.cantidad"></InputNumber>
+			</div>
+			<div class="card-footer d-flex justify-content-end">
+				<button type="submit" @onclick="GuardarAporte" class="btn btn-primary bi bi-floppy"> Crear</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+@code {
+	public ControlHuacal huacal = new(); 
+	public async Task GuardarAporte() 
+	{ 
+		if (await registroServices.Insertar(huacal)) 
+		{ 
+			navigation.NavigateTo("/Registro/Index"); 
+		} 
+	}
+}

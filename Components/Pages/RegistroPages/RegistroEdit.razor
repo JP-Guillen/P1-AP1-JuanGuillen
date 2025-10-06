@@ -3,38 +3,90 @@
 @inject NavigationManager navigation
 @rendermode InteractiveServer
 
-<div class="container">
-    <div class="card shadow-lg">
-        <div class="card-header">
-            <h2 class="card-title">Editar</h2>
-        </div>
+<PageTitle>Editar Registro</PageTitle>
 
-        <div class="card-body">
-            <div class="mb-3">
-                <label class="form-label"><strong>Nombre Cliente</strong></label>
-                <InputText class="form-control" @bind-Value="huacal.NombreCliente" />
+<EditForm Model="huacal" OnValidSubmit="GuardarRegistro">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="container">
+        <div class="card shadow-lg">
+            <div class="card-header text-center">
+                <h5 class="card-title">Editar Registro</h5>
             </div>
-            <div class="mb-3">
-                <label class="form-label"><strong>Precio</strong></label>
-                <InputNumber class="form-control" @bind-Value="huacal.precio" />
+
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label"><strong>Nombre Cliente</strong></label>
+                    <InputText class="form-control" @bind-Value="huacal.NombreCliente" />
+                    <ValidationMessage For="@(() => huacal.NombreCliente)" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><strong>Fecha</strong></label>
+                    <InputDate class="form-control" @bind-Value="huacal.fecha" />
+                    <ValidationMessage For="@(() => huacal.fecha)" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><strong>Precio</strong></label>
+                    <InputNumber class="form-control" @bind-Value="huacal.precio" @oninput="ActualizarImporte" />
+                    <ValidationMessage For="@(() => huacal.precio)" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><strong>Cantidad</strong></label>
+                    <InputNumber class="form-control" @bind-Value="huacal.cantidad" @oninput="ActualizarImporte" />
+                    <ValidationMessage For="@(() => huacal.cantidad)" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><strong>Importe</strong></label>
+                    <InputNumber class="form-control" @bind-Value="huacal.Importe" readonly />
+                </div>
             </div>
-            <div class="mb-3">
-                <label class="form-label"><strong>Cantidad</strong></label>
-                <InputNumber class="form-control" @bind-Value="huacal.cantidad" />
-            </div>
-            <div class="card-footer text-center">
-                <button type="submit" @onclick="GuardarRegistro" class="btn btn-primary bi bi-floppy"> Modificar</button>
-                <button type="button" @onclick="Eliminar" class="btn btn-danger bi bi-trash"> Eliminar</button>
+
+            <div class="card-footer text-center mt-2">
+                <a href="/Registro/Index" class="btn btn-secondary">
+                    <span class="bi bi-arrow-left"></span> Volver
+                </a>
+                <button type="submit" class="btn btn-primary bi bi-floppy"> Modificar</button>
+                <button type="button" class="btn btn-danger bi bi-trash" @onclick="() => MostrarModal = true"> Eliminar</button>
             </div>
         </div>
     </div>
-</div>
+</EditForm>
+
+@if (MostrarModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar Eliminación</h5>
+                    <button type="button" class="btn-close" @onclick="() => MostrarModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que deseas eliminar este registro?</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => MostrarModal = false">Cancelar</button>
+                    <button class="btn btn-danger" @onclick="ConfirmarEliminar">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@Mensaje
 
 @code {
     [Parameter]
     public int IdEntrada { get; set; }
 
     public ControlHuacal huacal = new();
+    public string Mensaje { get; set; } = string.Empty;
+    public bool MostrarModal { get; set; } = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -42,6 +94,7 @@
         if (resultado != null)
         {
             huacal = resultado;
+            ActualizarImporte(null);
         }
         else
         {
@@ -49,19 +102,36 @@
         }
     }
 
+    private void ActualizarImporte(ChangeEventArgs e)
+    {
+        huacal.Importe = huacal.cantidad * huacal.precio;
+    }
+
     public async Task GuardarRegistro()
     {
+        huacal.Importe = huacal.cantidad * huacal.precio;
         if (await registroServices.Modificar(huacal))
         {
             navigation.NavigateTo("/Registro/Index");
         }
+        else
+        {
+            Mensaje = "No se pudo modificar el registro";
+        }
     }
 
-    public async Task Eliminar()
+    private async Task ConfirmarEliminar()
     {
-        if (await registroServices.Eliminar(IdEntrada))
+        var eliminado = await registroServices.Eliminar(IdEntrada);
+        if (eliminado)
         {
             navigation.NavigateTo("/Registro/Index");
         }
+        else
+        {
+            Mensaje = "No se pudo eliminar el registro";
+        }
+
+        MostrarModal = false;
     }
 }

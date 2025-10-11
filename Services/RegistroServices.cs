@@ -2,49 +2,167 @@
 using P1_AP1_JuanGuillen.DAL;
 using P1_AP1_JuanGuillen.Models;
 using System.Linq.Expressions;
+using static P1_AP1_JuanGuillen.Services.RegistroServices;
 
 namespace P1_AP1_JuanGuillen.Services;
 
-public class RegistroServices(IDbContextFactory<Contexto> DbFactory)
+public class RegistroServices
 {
+    private readonly IDbContextFactory<Contexto> DbFactory;
 
-    public async Task<List<ControlHuacal>> Listar(Expression<Func<ControlHuacal, bool >> criterio)
+    public RegistroServices(IDbContextFactory<Contexto> dbFactory)
+    {
+        DbFactory = dbFactory;
+    }
+
+    public async Task<List<EntradasHuacales>> Listar(Expression<Func<EntradasHuacales, bool>> criterio)
     {
         await using var contexto = await DbFactory.CreateDbContextAsync();
-        return await contexto.Registros
-            .Where(criterio)
+        return await contexto.EntradaHuacal
+            .Include(e => e.EntradasHuacalesDetalles)
             .AsNoTracking()
+            .Where(criterio)
             .ToListAsync();
     }
 
-    public async Task<bool> Insertar(ControlHuacal huacal)
+    public async Task<EntradasHuacales?> Buscar(int idEntrada)
     {
         await using var contexto = await DbFactory.CreateDbContextAsync();
-        contexto.Registros.Add(huacal);
+        return await contexto.EntradaHuacal
+            .Include(e => e.EntradasHuacalesDetalles)
+                .ThenInclude(d => d.TipoHuacal)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.IdEntrada == idEntrada);
+    }
+
+    public async Task<bool> Insertar(EntradasHuacales entrada)
+    {
+        await using var contexto = await DbFactory.CreateDbContextAsync();
+        contexto.EntradaHuacal.Add(entrada);
+        await AfectarExistencia(entrada.EntradasHuacalesDetalles.ToArray(), TipoOperacion.Suma);
         return await contexto.SaveChangesAsync() > 0;
     }
 
-    public async Task<bool> Modificar(ControlHuacal huacal)
+    public async Task<bool> Modificar(EntradasHuacales entrada)
     {
         await using var contexto = await DbFactory.CreateDbContextAsync();
-        contexto.Update(huacal);
-        return await contexto
-            .SaveChangesAsync() > 0;
+
+      
+        var anterior = await contexto.EntradaHuacal
+            .Include(e => e.EntradasHuacalesDetalles)
+            .FirstOrDefaultAsync(e => e.IdEntrada == entrada.IdEntrada);
+
+        if (anterior == null)
+            return false;
+
+      
+        await AfectarExistencia(anterior.EntradasHuacalesDetalles.ToArray(), TipoOperacion.Resta);
+        await AfectarExistencia(entrada.EntradasHuacalesDetalles.ToArray(), TipoOperacion.Suma);
+
+        foreach (var detAnterior in anterior.EntradasHuacalesDetalles.ToList())
+        {
+            if (!entrada.EntradasHuacalesDetalles.Any(d => d.DetallesId == detAnterior.DetallesId))
+            {
+                contexto.Remove(detAnterior);
+            }
+        }
+
+        
+        foreach (var detNuevo in entrada.EntradasHuacalesDetalles)
+        {
+            if (detNuevo.DetallesId == 0)
+            {
+              
+                contexto.Add(detNuevo);
+            }
+            else
+            {
+              
+                var detExistente = anterior.EntradasHuacalesDetalles
+                    .First(d => d.DetallesId == detNuevo.DetallesId);
+
+                detExistente.TipoId = detNuevo.TipoId;
+                detExistente.Cantidad = detNuevo.Cantidad;
+                detExistente.Precio = detNuevo.Precio;
+            }
+        }
+
+   
+        anterior.NombreCliente = entrada.NombreCliente;
+        anterior.fecha = entrada.fecha;
+        anterior.cantidad = entrada.cantidad;
+        anterior.precio = entrada.precio;
+
+        return await contexto.SaveChangesAsync() > 0;
     }
 
-    public async Task<bool> Eliminar(int IdEntrada)
+
+
+    public async Task<bool> Eliminar(int idEntrada)
     {
         await using var contexto = await DbFactory.CreateDbContextAsync();
-        return await contexto.Registros
-            .Where(j => j.IdEntrada == IdEntrada)
-            .ExecuteDeleteAsync() > 0;
+
+        var entrada = await contexto.EntradaHuacal
+            .Include(e => e.EntradasHuacalesDetalles)
+            .FirstOrDefaultAsync(e => e.IdEntrada == idEntrada);
+
+        if (entrada == null)
+            return false;
+
+        await AfectarExistencia(entrada.EntradasHuacalesDetalles.ToArray(), TipoOperacion.Resta);
+
+        contexto.HuacalDetalles.RemoveRange(entrada.EntradasHuacalesDetalles);
+        contexto.EntradaHuacal.Remove(entrada);
+
+        return await contexto.SaveChangesAsync() > 0;
     }
 
-    public async Task<ControlHuacal?> Buscar(int Entrada)
+    public async Task<bool> Existe(int idEntrada)
     {
         await using var contexto = await DbFactory.CreateDbContextAsync();
-        return await contexto.Registros.FirstOrDefaultAsync(j => j.IdEntrada == Entrada);
+        return await contexto.EntradaHuacal
+            .AnyAsync(e => e.IdEntrada == idEntrada);
     }
 
+    public async Task<bool> Guardar(EntradasHuacales entrada)
+    {
+        if (!await Existe(entrada.IdEntrada))
+            return await Insertar(entrada);
+        else
+            return await Modificar(entrada);
+    }
+
+    private async Task AfectarExistencia(EntradasHuacalesDetalle[] detalles, TipoOperacion tipo)
+    {
+        await using var contexto = await DbFactory.CreateDbContextAsync();
+
+        foreach (var det in detalles)
+        {
+            var tipoHuacal = await contexto.TipoHuacales
+                .SingleAsync(t => t.TipoId == det.TipoId);
+
+            if (tipo == TipoOperacion.Suma)
+            {
+                tipoHuacal.Existencia += det.Cantidad;
+            }
+            else if (tipo == TipoOperacion.Resta)
+            {
+                tipoHuacal.Existencia -= det.Cantidad;
+            }
+        }
+
+        await contexto.SaveChangesAsync();
+    }
+
+    public async Task<List<TiposHuacales>> ListarTipos()
+    {
+        await using var contexto = await DbFactory.CreateDbContextAsync();
+        return await contexto.TipoHuacales.AsNoTracking().ToListAsync();
+    }
+
+    public enum TipoOperacion
+    {
+        Suma,
+        Resta
+    }
 }
-

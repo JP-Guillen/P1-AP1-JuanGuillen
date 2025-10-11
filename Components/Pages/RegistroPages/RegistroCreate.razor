@@ -1,26 +1,26 @@
-﻿@page "/Registro/edit/{IdEntrada:int}"
+﻿@page "/Registro/crear"
 @inject RegistroServices registroServices
 @inject NavigationManager navigation
 @inject ToastService toastService
 @rendermode InteractiveServer
 
-<PageTitle>Editar Registro</PageTitle>
+<PageTitle>Crear Registro</PageTitle>
 
 <div class="container">
-    <EditForm Model="huacal" OnValidSubmit="GuardarCambios">
+    <EditForm Model="huacal" OnValidSubmit="GuardarRegistro">
         <DataAnnotationsValidator />
         <ValidationSummary />
 
         <div class="card shadow-lg">
             <div class="card-header text-center">
-                <h4 class="card-title">Editar Registro</h4>
+                <h4 class="card-title">Crear Registro</h4>
             </div>
 
             <div class="card-body">
                 <div class="mb-3">
                     <label class="form-label"><strong>Nombre Cliente</strong></label>
                     <InputText class="form-control" @bind-Value="huacal.NombreCliente" />
-                    <ValidationMessage For="(() => huacal.NombreCliente)" />
+                   
                 </div>
 
                 <div class="mb-3">
@@ -33,8 +33,8 @@
                     <div class="col-md-6">
                         <label class="form-label"><strong>Precio Unitario</strong></label>
                         <InputNumber class="form-control" @bind-Value="huacal.precio" readonly />
+                      
                     </div>
-
                     <div class="col-md-6">
                         <label class="form-label"><strong>Cantidad Total</strong></label>
                         <InputNumber class="form-control" @bind-Value="huacal.cantidad" readonly />
@@ -60,13 +60,13 @@
                         <div class="col-md-3">
                             <label class="form-label"><strong>Cantidad</strong></label>
                             <InputNumber class="form-control" @bind-Value="nuevoDetalle.Cantidad" />
-                            
+                            <ValidationMessage For="(() => huacal.cantidad)" />
                         </div>
 
                         <div class="col-md-3">
                             <label class="form-label"><strong>Precio</strong></label>
                             <InputNumber class="form-control" @bind-Value="nuevoDetalle.Precio" />
-                            
+                            <ValidationMessage For="(() => huacal.precio)" />
                         </div>
 
                         <div class="col-md-2 d-flex">
@@ -76,6 +76,7 @@
                         </div>
                     </div>
 
+                   
                     <table class="table table-bordered table-striped mt-3">
                         <thead class="table-primary text-center">
                             <tr>
@@ -95,29 +96,17 @@
                             }
                             else
                             {
-                                @for (int i = 0; i < detalles.Count; i++)
+                                @foreach (var det in detalles)
                                 {
-                                    var det = detalles[i];
                                     <tr>
-                                        <td>
-                                            <select class="form-select" @bind="det.TipoId">
-                                                @foreach (var tipo in tiposHuacales)
-                                                {
-                                                    <option value="@tipo.TipoId">@tipo.Descripcion</option>
-                                                }
-                                            </select>
-                                        </td>
-                                        <td><InputNumber class="form-control" @bind-Value="det.Cantidad" /></td>
-                                        
-                                        <td><InputNumber class="form-control" @bind-Value="det.Precio" /></td>
-                                       
-                                        <td>@(det.Cantidad* det.Precio)</td>
+                                        <td>@tiposHuacales.FirstOrDefault(t => t.TipoId == det.TipoId)?.Descripcion</td>
+                                        <td>@det.Cantidad</td>
+                                        <td>@det.Precio</td>
+                                        <td>@huacal.Importe</td>
                                         <td class="text-center">
-                                            <button type="button" class="btn btn-danger btn-sm bi bi-trash"
-                                                    @onclick="() => RemoverDetalle(det)">
+                                            <button class="btn btn-danger btn-sm bi bi-trash" @onclick="() => EliminarDetalle(det)">
                                                 Eliminar
                                             </button>
-
                                         </td>
                                     </tr>
                                 }
@@ -131,60 +120,29 @@
                 <a href="/Registro/Index" class="btn btn-secondary">
                     <span class="bi bi-arrow-left"></span> Volver
                 </a>
-
-                <div>
-                    <button type="button" class="btn btn-danger me-2" @onclick="MostrarModal">
-                        <i class="bi bi-trash"></i> Eliminar Registro
-                    </button>
-
-                    <button type="submit" class="btn btn-primary bi bi-floppy"> Modificar</button>
-                </div>
+                <button type="submit" class="btn btn-primary bi bi-floppy"> Crear</button>
             </div>
         </div>
     </EditForm>
 </div>
 
-@if (mostrarModal)
-{
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title">Confirmar eliminación</h5>
-                    <button type="button" class="btn-close" @onclick="CerrarModal"></button>
-                </div>
-                <div class="modal-body">
-                    <p>¿Desea eliminar este registro completamente?</p>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" @onclick="CerrarModal">Cancelar</button>
-                    <button class="btn btn-danger" @onclick="ConfirmarEliminacion">Eliminar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-}
-
 @code {
-    [Parameter] public int IdEntrada { get; set; }
-    public EntradasHuacales huacal { get; set; } = new EntradasHuacales();
-    private List<EntradasHuacalesDetalle> detalles { get; set; } = new();
-    private EntradasHuacalesDetalle nuevoDetalle { get; set;} = new();
+    public EntradasHuacales huacal = new();
+    private List<EntradasHuacalesDetalle> detalles = new();
+    private EntradasHuacalesDetalle nuevoDetalle = new();
     private List<TiposHuacales> tiposHuacales = new();
-    private bool mostrarModal = false;
 
     protected override async Task OnInitializedAsync()
     {
+        huacal.fecha = DateTime.Now;
         tiposHuacales = await registroServices.ListarTipos();
-        huacal = await registroServices.Buscar(IdEntrada) ?? new EntradasHuacales();
-        detalles = huacal.EntradasHuacalesDetalles?.ToList() ?? new List<EntradasHuacalesDetalle>();
-        CalcularTotal();
     }
 
     private void CalcularTotal()
     {
         huacal.cantidad = detalles.Sum(d => d.Cantidad);
         huacal.precio = detalles.Sum(d => d.Precio);
+        huacal.Importe = detalles.Sum(d => d.Precio + d.Cantidad);
     }
 
     private void AgregarDetalle()
@@ -195,61 +153,41 @@
             return;
         }
 
-        nuevoDetalle.IdEntrada = huacal.IdEntrada;
-
         detalles.Add(new EntradasHuacalesDetalle
         {
             TipoId = nuevoDetalle.TipoId,
             Cantidad = nuevoDetalle.Cantidad,
-            Precio = nuevoDetalle.Precio,
-            IdEntrada = huacal.IdEntrada
+            Precio = nuevoDetalle.Precio
         });
 
         nuevoDetalle = new EntradasHuacalesDetalle();
         CalcularTotal();
     }
 
-    private void RemoverDetalle(EntradasHuacalesDetalle detalle)
+    private void EliminarDetalle(EntradasHuacalesDetalle detalle)
     {
         detalles.Remove(detalle);
         CalcularTotal();
     }
 
-    
-
-    private async Task GuardarCambios()
+    private async Task GuardarRegistro()
     {
-        CalcularTotal();
-
-      
-        huacal.EntradasHuacalesDetalles = new List<EntradasHuacalesDetalle>(detalles);
-
-        if (await registroServices.Modificar(huacal))
+        if (detalles.Count == 0)
         {
-            toastService.ShowSuccess("Registro modificado correctamente.");
+            toastService.ShowWarning("Debe agregar al menos un detalle antes de guardar.");
+            return;
+        }
+
+        huacal.EntradasHuacalesDetalles = detalles;
+
+        if (await registroServices.Insertar(huacal))
+        {
+            toastService.ShowSuccess("Registro y detalles guardados correctamente.");
             navigation.NavigateTo("/Registro/Index");
         }
         else
         {
-            toastService.ShowError("Error al modificar el registro.");
-        }
-    }
-
-
-    private void MostrarModal() => mostrarModal = true;
-    private void CerrarModal() => mostrarModal = false;
-
-    private async Task ConfirmarEliminacion()
-    {
-        mostrarModal = false;
-        if (await registroServices.Eliminar(huacal.IdEntrada))
-        {
-            toastService.ShowSuccess("Registro eliminado correctamente.");
-            navigation.NavigateTo("/Registro/Index");
-        }
-        else
-        {
-            toastService.ShowError("No se pudo eliminar el registro.");
+            toastService.ShowError("Error al guardar el registro.");
         }
     }
 }

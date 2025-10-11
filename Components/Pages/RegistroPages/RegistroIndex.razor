@@ -74,7 +74,7 @@
 @code {
 	public string Filtro;
 	public string valor;
-	private List<ControlHuacal> Lista { get; set; } = new List<ControlHuacal>();
+	private List<EntradasHuacales> Lista { get; set; } = new List<EntradasHuacales>();
 
 	protected override async Task OnInitializedAsync()
 	{
@@ -85,7 +85,13 @@
 	private void CalcularImportes()
 	{
 		foreach (var h in Lista)
-			h.Importe = h.cantidad * h.precio;
+		{
+			
+			h.precio = h.EntradasHuacalesDetalles.Sum(d => d.Cantidad * d.Precio);
+
+		
+			h.Importe = h.precio;
+		}
 	}
 
 	private async Task Buscar()
@@ -103,7 +109,7 @@
 					break;
 				case "Precio":
 					if (double.TryParse(valor, out double p))
-						Lista = await registroServices.Listar(r => r.precio == p);
+						Lista = await registroServices.Listar(r => r.EntradasHuacalesDetalles.Sum(d => d.Cantidad * d.Precio) == p);
 					break;
 				case "Cantidad":
 					if (int.TryParse(valor, out int c))

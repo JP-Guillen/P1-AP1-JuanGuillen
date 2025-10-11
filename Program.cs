@@ -1,5 +1,6 @@
-using P1_AP1_JuanGuillen.Components;
+using Blazored.Toast;
 using Microsoft.EntityFrameworkCore;
+using P1_AP1_JuanGuillen.Components;
 using P1_AP1_JuanGuillen.DAL;
 using P1_AP1_JuanGuillen.Services;
 
@@ -15,6 +16,7 @@ var ConStr = builder.Configuration.GetConnectionString("ConStr");
 builder.Services.AddDbContextFactory<Contexto>(o => o.UseSqlite(ConStr));
 
 builder.Services.AddScoped<RegistroServices>();
+builder.Services.AddBlazorBootstrap();
 
 var app = builder.Build();
 

@@ -132,7 +132,7 @@ public class RegistroServices
             return await Modificar(entrada);
     }
 
-    private async Task AfectarExistencia(EntradasHuacalesDetalle[] detalles, TipoOperacion tipo)
+    public async Task AfectarExistencia(EntradasHuacalesDetalle[] detalles, TipoOperacion tipo)
     {
         await using var contexto = await DbFactory.CreateDbContextAsync();
 

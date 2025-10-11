@@ -187,7 +187,7 @@
         huacal.precio = detalles.Sum(d => d.Precio);
     }
 
-    private void AgregarDetalle()
+    private async Task AgregarDetalle()
     {
         if (nuevoDetalle.TipoId == 0 || nuevoDetalle.Cantidad <= 0 || nuevoDetalle.Precio <= 0)
         {
@@ -204,16 +204,24 @@
             Precio = nuevoDetalle.Precio,
             IdEntrada = huacal.IdEntrada
         });
+        await registroServices.AfectarExistencia(new EntradasHuacalesDetalle[] { nuevoDetalle }, RegistroServices.TipoOperacion.Suma);
 
         nuevoDetalle = new EntradasHuacalesDetalle();
         CalcularTotal();
     }
 
-    private void RemoverDetalle(EntradasHuacalesDetalle detalle)
+
+
+
+
+    private async Task RemoverDetalle(EntradasHuacalesDetalle detalle)
     {
         detalles.Remove(detalle);
+        await registroServices.AfectarExistencia(new EntradasHuacalesDetalle[] { detalle }, RegistroServices.TipoOperacion.Resta);
+
         CalcularTotal();
     }
+
 
     
 
